@@ -31,7 +31,7 @@ class Spot:
         self.y = self.start_y + (self.row * self.block_size)
     
     def draw(self, win):
-        pygame.draw.rect(win, (255, 255, 255), (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
+        pygame.draw.rect(win, (0, 0, 255), (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
 
 
 class Square:

@@ -20,6 +20,18 @@ days_of_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 BLOCK_SIZE = 100
 
 
+class Spot:
+    def __init__(self, row, col, block_size):
+        self.row = row
+        self.col = col
+        self.block_size = block_size
+        self.x = self.col * self.block_size
+        self.y = self.row * self.block_size
+    
+    def draw(self, win):
+        pygame.draw.rect(win, (255, 255, 255), (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
+
+
 class Square:
     def __init__(self, month_index, block_size):
         self.block_size = block_size
@@ -28,19 +40,30 @@ class Square:
         self.month_index = month_index
         self.month = months[self.month_index]
         self.days = days_of_month[self.month_index]
+        self.week = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+        self.grid = self.get_grid()
+    
+    def get_grid(self):
+        grid = []
+        for i in range(len(self.week)):
+            grid.append([])
+            for j in range(self.days//len(self.week)):
+                spot = Spot(i, j, self.block_size)
+                grid[i].append(spot)
+        
+        return grid
     
     def draw(self, win):
         # NEED TO MAKE IT START IN THE RIGHT DAY OF THE WEEK
-        week = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
         self.blit_days(win)
-        for i in range(len(week)):
-            draw_names_of_weekend(win, week[i], self.start_x + (i*self.block_size) + self.block_size//2-10)
-            for j in range(self.days//len(week)):
+        for i in range(len(self.week)):
+            draw_names_of_weekend(win, self.week[i], self.start_x + (i*self.block_size) + self.block_size//2-10)
+            for j in range(self.days//len(self.week)):
                 pygame.draw.rect(win, (255, 0, 0), (self.start_x + (i*self.block_size), self.start_y + (j*self.block_size),
                             self.block_size, self.block_size), 2)
-                for left in range(self.days%len(week)):
+                for left in range(self.days%len(self.week)):
                     pygame.draw.rect(win, (255, 0, 0), (self.start_x + (left*self.block_size),
-                            self.start_y + ((self.days//len(week))*self.block_size), self.block_size, self.block_size), 2)
+                            self.start_y + ((self.days//len(self.week))*self.block_size), self.block_size, self.block_size), 2)
     
     def blit_days(self, win):
         j = self.start_y+5
@@ -69,10 +92,15 @@ def draw_names_of_weekend(win, txt, x):
     text = font.render(txt, True, (0, 0, 0))
     win.blit(text, (x, 100))
 
-def redraw_window(win, width, month_index, year):
+def redraw_window(win, width, month_index, year, square):
     win.fill((255, 255, 255))
     draw_name_month(win, width, months[month_index])
     blit_text(win, 30, f"Year: {str(year)}", (0, 0, 0), 630, 650)
+    square.draw(win)
+
+    for row in square.grid:
+        for spot in row:
+            spot.draw(win)
 
 def main(win, width):
     run = True
@@ -83,8 +111,7 @@ def main(win, width):
         square = Square(month_index, BLOCK_SIZE)
         pos = pygame.mouse.get_pos()
 
-        redraw_window(win, width, month_index, year)
-        square.draw(win)
+        redraw_window(win, width, month_index, year, square)
 
         # BUTTONS
         initial_x_f, final_x_f, initial_y_f, final_y_f = forward_button(win, pos, width)

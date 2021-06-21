@@ -27,8 +27,8 @@ class Spot:
         self.block_size = block_size
         self.start_x = 30
         self.start_y = 140
-        self.x = self.start_x + (self.col * self.block_size)
-        self.y = self.start_y + (self.row * self.block_size)
+        self.x = self.start_x + (self.row * self.block_size)
+        self.y = self.start_y + (self.col * self.block_size)
     
     def draw(self, win):
         pygame.draw.rect(win, (0, 0, 255), (self.x+1, self.y+1, self.block_size-1, self.block_size-1))

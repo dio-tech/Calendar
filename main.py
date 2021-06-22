@@ -257,6 +257,7 @@ def main(win, width):
                 clicked_pos = pygame.mouse.get_pos()
                 row, col = get_click(clicked_pos, square)
                 print(square.grid[0][0].x)
+                pygame.draw.circle(win, (0, 0, 255), (230, 140), 10)
                 if initial_x_f <= clicked_pos[0] <= final_x_f:
                     if initial_y_f <= clicked_pos[1] <= final_y_f:
                         month_index += 1

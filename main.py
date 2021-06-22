@@ -218,30 +218,7 @@ def draw_names_of_weekend(win, txt, x):
 
 def get_click(pos, square):
     # NEED TO FIX CLICKED POS
-    if square.start_x + (square.start_day_month * square.block_size) <= pos[0] <= square.end_first_x:
-        if square.start_y <= pos[1] <= square.end_first_y:
-            div_x = pos[0] - square.start_x - (square.start_day_month * square.block_size)
-            div_y = pos[1] - square.start_y
-            row = div_y // BLOCK_SIZE
-            col = div_x // BLOCK_SIZE
-            return row, col
-    
-    if square.start_x <= pos[0] <= square.end_first_x:
-        if square.start_y + square.block_size <= pos[1] <= square.start_y + (3 * square.block_size):
-            div_x = pos[0] - square.start_x
-            div_y = pos[1] - square.start_y
-            row = div_y // BLOCK_SIZE
-            col = div_x // BLOCK_SIZE
-            return row, col
-    
-    if square.end_first_y <= pos[1] <= square.end_final_y:
-        if square.start_x <= pos[0] <= square.end_final_x:
-            div_x = pos[0] - square.start_x
-            div_y = pos[1] - square.start_y
-            row = div_y // BLOCK_SIZE
-            col = div_x // BLOCK_SIZE
-            return row, col
-    return -1, -1
+    return 0, 0
 
 def redraw_window(win, width, month_index, year, square):
     win.fill((255, 255, 255))
@@ -279,7 +256,7 @@ def main(win, width):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked_pos = pygame.mouse.get_pos()
                 row, col = get_click(clicked_pos, square)
-                print(row, col)
+                print(square.grid[0][0].x)
                 if initial_x_f <= clicked_pos[0] <= final_x_f:
                     if initial_y_f <= clicked_pos[1] <= final_y_f:
                         month_index += 1

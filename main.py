@@ -296,6 +296,11 @@ def main(win, width):
         elif month_index < 0:
             month_index = 11
             year -= 1
+            for date in TEXTS:
+                if date[0] == year:
+                    check.append(1)
+            if len(check) == 0:
+                TEXTS.append([year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]])
         
         pygame.display.update()
 

@@ -21,21 +21,29 @@ days_of_month = [31, [28, 29], 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 BLOCK_SIZE = 100
 leap_year = 2016
 START = []
+TEXTS = [[2021, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]]]
 
 
 class Spot:
-    def __init__(self, row, col, block_size, start):
+    def __init__(self, row, col, block_size, month_index, year):
         self.row = row
         self.col = col
-        self.start = start
         self.block_size = block_size
-        self.start_x = 30 + self.start
+        self.start_x = 30
         self.start_y = 140
         self.x = self.start_x + (self.row * self.block_size)
         self.y = self.start_y + (self.col * self.block_size)
+        self.color = (255, 255, 255)
+        self.year = year
+        self.month_index = month_index
+        for date in TEXTS:
+            if date[0] == self.year:
+                self.text = date[1][self.month_index][row][col]
     
     def draw(self, win):
-        pygame.draw.rect(win, (255, 255, 255), (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
+        pygame.draw.rect(win, self.color, (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
+        if type(self.text) != list:
+            blit_text(win, 20, str(self.text), (0, 0, 0), self.x + self.block_size//2, self.y + self.block_size//2)
         # ITS GOING TO BE A TEXT
 
 
@@ -65,6 +73,9 @@ class Square:
         self.start_day_month = self.get_starting_day()
         self.final_day_month = self.get_final_month_day_week()
         self.grid = self.get_grid()
+        self.num_of_last_rows = math.ceil((self.days - (14+len(self.week)-self.start_day_month))/len(self.week))
+        self.num_of_rest = (self.days - (14+len(self.week)-self.start_day_month))%len(self.week)
+    # PROBLEMS IN GETTING THE DAYS
     
     def get_starting_day(self):
         if len(START) == 0:
@@ -77,12 +88,11 @@ class Square:
                 if day == -1:
                     day = 6
             START.append(day)
-            return day
         return START[0]
     
     def get_final_month_day_week(self):
         day = self.start_day_month
-        for _ in range(dt.now().day, self.days+1):
+        for _ in range(self.days):
             day += 1
             if day > len(self.week)-1:
                 day = 0
@@ -110,36 +120,35 @@ class Square:
 
     
     def get_grid(self):
-        grid = []
+        grid = [[0 for _ in range(6)] for x in range(7)]
         # FIRST LINE
-        for i in range(len(self.week) - self.start_day_month):
-            grid.append([])
-            spot = Spot(i, 0, self.block_size, (self.start_day_month*self.block_size))
-            grid[i].append(spot)
+        counter = self.start_day_month
+        for _ in range(len(self.week) - self.start_day_month):
+            spot = Spot(counter, 0, self.block_size, self.month_index, self.year)
+            grid[counter][0] = spot
+            counter += 1
+        # SECOND AND THIRD LINES
         for i in range(len(self.week)):
-            grid.append([])
             for j in range(1, 3):
-                spot = Spot(i, j, self.block_size, 0)
-                grid[i].append(spot)
+                spot = Spot(i, j, self.block_size, self.month_index, self.year)
+                grid[i][j] = spot
+        # THE REST
         difference = self.days - (14+(len(self.week)-self.start_day_month))
         module = difference%len(self.week)
         if module <= 0:
             for i in range(len(self.week)):
-                grid.append([])
-                for j in range(3, 3+round((difference-module)/len(self.week))):
-                    spot = Spot(i, j, self.block_size, 0)
-                    grid[i].append(spot)
-        else:
+                for j in range(3, 3+math.ceil((difference-module)/len(self.week))):
+                    spot = Spot(i, j, self.block_size, self.month_index, self.year)
+                    grid[i][j] = spot
+        if module > 0:
             for i in range(len(self.week)):
-                grid.append([])
-                for j in range(3, 3 + round((difference-module)/len(self.week))):
-                    spot = Spot(i, j, self.block_size, 0)
-                    grid[i].append(spot)
+                for j in range(3, 3 + (difference//(len(self.week)))):
+                    spot = Spot(i, j, self.block_size, self.month_index, self.year)
+                    grid[i][j] = spot
             for i in range(module):
-                grid.append([])
-                for j in range(3 + round((difference-module)/len(self.week)), 3 + round((difference-module)/len(self.week))+1):
-                    spot = Spot(i, j, self.block_size, 0)
-                    grid[i].append(spot)
+                for j in range(3 + (difference//(len(self.week))), 3 + (difference//(len(self.week))) + 1):
+                    spot = Spot(i, j, self.block_size, self.month_index, self.year)
+                    grid[i][j] = spot
         
         return grid
     
@@ -217,8 +226,17 @@ def draw_names_of_weekend(win, txt, x):
     win.blit(text, (x, 100))
 
 def get_click(pos, square):
-    # NEED TO FIX CLICKED POS
-    return 0, 0
+    if square.start_x <= pos[0] <= square.end_first_x:
+        if square.start_y <= pos[1] <= square.end_final_y:
+            div_x = pos[0] - square.start_x
+            div_y = pos[1] - square.start_y
+            row = div_x // square.block_size
+            col = div_y // square.block_size
+    
+            if square.grid[row][col] != 0:
+                return row, col
+    
+    return -1, -1
 
 def redraw_window(win, width, month_index, year, square):
     win.fill((255, 255, 255))
@@ -226,12 +244,10 @@ def redraw_window(win, width, month_index, year, square):
     blit_text(win, 30, f"Year: {str(year)}", (0, 0, 0), 630, 650)
     square.draw(win)
 
-    try:
-        for row in square.grid:
-            for spot in row:
+    for row in square.grid:
+        for spot in row:
+            if spot != 0:
                 spot.draw(win)
-    except:
-        pass
     
     square.blit_days(win)
 
@@ -256,8 +272,12 @@ def main(win, width):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked_pos = pygame.mouse.get_pos()
                 row, col = get_click(clicked_pos, square)
-                print(square.grid[0][0].x)
-                pygame.draw.circle(win, (0, 0, 255), (230, 140), 10)
+                if (row, col) != (-1, -1):
+                    # print(square.grid[row][col].text)
+                    pass
+                for date in TEXTS:
+                    if date[0] == year:
+                        date[1][month_index][row][col] = 'This is the way'
                 if initial_x_f <= clicked_pos[0] <= final_x_f:
                     if initial_y_f <= clicked_pos[1] <= final_y_f:
                         month_index += 1
@@ -270,6 +290,12 @@ def main(win, width):
         if month_index > 11:
             month_index = 0
             year += 1
+            check = []
+            for date in TEXTS:
+                if date[0] == year:
+                    check.append(1)
+            if len(check) == 0:
+                TEXTS.append([year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]])
         elif month_index < 0:
             month_index = 11
             year -= 1

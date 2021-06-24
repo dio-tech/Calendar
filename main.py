@@ -272,6 +272,7 @@ def main(win, width):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked_pos = pygame.mouse.get_pos()
                 row, col = get_click(clicked_pos, square)
+                print(row, col)
                 if (row, col) != (-1, -1):
                     # print(square.grid[row][col].text)
                     pass

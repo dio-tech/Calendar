@@ -252,6 +252,7 @@ def redraw_window(win, width, month_index, year, square):
     square.blit_days(win)
 
 def add_birthday():
+    # CORRECT THIS
     for date in TEXTS:
         date[1][2][3][3] = 'My Birthday'
 
@@ -276,18 +277,19 @@ def main(win, width):
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked_pos = pygame.mouse.get_pos()
-                row, col = get_click(clicked_pos, square)
-                for date in TEXTS:
-                    if date[0] == year:
-                        date[1][month_index][row][col] = 'This is the way'
                 if initial_x_f <= clicked_pos[0] <= final_x_f:
                     if initial_y_f <= clicked_pos[1] <= final_y_f:
                         month_index += 1
                         START[0] = square.final_day_month
-                if initial_x_b <= clicked_pos[0] <= final_x_b:
+                elif initial_x_b <= clicked_pos[0] <= final_x_b:
                     if initial_y_b <= clicked_pos[1] <= final_y_b:
                         month_index -= 1
                         START[0] = square.get_start_day_previous_month()
+                else:
+                    row, col = get_click(clicked_pos, square)
+                    for date in TEXTS:
+                        if date[0] == year:
+                            date[1][month_index][row][col] = 'This is the way'
         
         if month_index > 11:
             month_index = 0

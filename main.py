@@ -253,7 +253,7 @@ def redraw_window(win, width, month_index, year, square):
 
 def add_birthday():
     for date in TEXTS:
-        date[1][3][3] = 'My Birthday'
+        date[1][2][3][3] = 'My Birthday'
 
 def main(win, width):
     run = True

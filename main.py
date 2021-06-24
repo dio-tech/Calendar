@@ -259,6 +259,7 @@ def main(win, width):
     run = True
     month_index = dt.now().month - 1
     year = dt.now().year
+    add_birthday()
 
     while run:
         square = Square(month_index, BLOCK_SIZE, year)

@@ -296,6 +296,7 @@ def main(win, width):
         elif month_index < 0:
             month_index = 11
             year -= 1
+            check = []
             for date in TEXTS:
                 if date[0] == year:
                     check.append(1)

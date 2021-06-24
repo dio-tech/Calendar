@@ -251,6 +251,10 @@ def redraw_window(win, width, month_index, year, square):
     
     square.blit_days(win)
 
+def add_birthday():
+    for date in TEXTS:
+        date[1][3][3] = 'My Birthday'
+
 def main(win, width):
     run = True
     month_index = dt.now().month - 1

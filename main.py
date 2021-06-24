@@ -227,7 +227,7 @@ def draw_names_of_weekend(win, txt, x):
 
 def get_click(pos, square):
     if square.start_x <= pos[0] <= square.end_first_x:
-        if square.start_y <= pos[1] <= square.end_final_y:
+        if square.start_y <= pos[1] <= square.end_final_y + square.block_size:
             div_x = pos[0] - square.start_x
             div_y = pos[1] - square.start_y
             row = div_x // square.block_size

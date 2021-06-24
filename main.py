@@ -272,10 +272,6 @@ def main(win, width):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 clicked_pos = pygame.mouse.get_pos()
                 row, col = get_click(clicked_pos, square)
-                print(row, col)
-                if (row, col) != (-1, -1):
-                    # print(square.grid[row][col].text)
-                    pass
                 for date in TEXTS:
                     if date[0] == year:
                         date[1][month_index][row][col] = 'This is the way'

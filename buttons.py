@@ -1,4 +1,5 @@
 import pygame
+from tkinter import *
 pygame.init()
 
 def forward_button(win, pos, width):
@@ -18,3 +19,7 @@ def back_button(win, pos, width):
             pygame.draw.rect(win, (255, 0, 0), (width//2 - 160 - 80, 685, 120, 50))
     win.blit(text, (width//2 - 200, 670))
     return width//2 - 160 - 80, width//2 - 160 - 80 + 120, 685, 685 + 50
+
+def tkinter_buttons(root, txt, h, w, c):
+    button = Button(root, text=txt, height=h, width=w, command=c)
+    return button

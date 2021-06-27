@@ -3,6 +3,7 @@ import pygame
 from datetime import datetime as dt
 from buttons import *
 import math
+from tkinter import *
 pygame.init()
 
 # ------------------------------------------
@@ -15,13 +16,14 @@ WIDTH = 750
 WIN = pygame.display.set_mode((WIDTH, WIDTH))
 pygame.display.set_caption('Calendar')
 
+actual_year = dt.now().year
 months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 # DAYS ARE IN THE ORDER OF MONTHS
 days_of_month = [31, [28, 29], 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 BLOCK_SIZE = 100
 leap_year = 2016
 START = []
-TEXTS = [[2021, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]]]
+TEXTS = [[actual_year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]]]
 
 
 class Spot:
@@ -36,15 +38,15 @@ class Spot:
         self.color = (255, 255, 255)
         self.year = year
         self.month_index = month_index
+        self.selected = False
         for date in TEXTS:
             if date[0] == self.year:
                 self.text = date[1][self.month_index][row][col]
     
     def draw(self, win):
         pygame.draw.rect(win, self.color, (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
-        if type(self.text) != list:
-            blit_text(win, 20, str(self.text), (0, 0, 0), self.x + self.block_size//2, self.y + self.block_size//2)
-        # ITS GOING TO BE A TEXT
+        if len(list(self.text)) != 0:
+            blit_text(win, 20, 'Note', (0, 0, 0), self.x + self.block_size//2, self.y + self.block_size//2)
 
 
 class Square:
@@ -75,6 +77,7 @@ class Square:
         self.grid = self.get_grid()
         self.num_of_last_rows = math.ceil((self.days - (14+len(self.week)-self.start_day_month))/len(self.week))
         self.num_of_rest = (self.days - (14+len(self.week)-self.start_day_month))%len(self.week)
+        self.sel = []
     # PROBLEMS IN GETTING THE DAYS
     
     def get_starting_day(self):
@@ -208,6 +211,20 @@ class Square:
             blit_text(win, 40, str(day), (0, 0, 0), x, j)
             day += 1
             counter += 1
+    
+    def restart_selected(self):
+        for i in range(6):
+            for j in range(7):
+                if self.grid[j][i] != 0:
+                    self.grid[j][i].selected = False
+    
+    def selected(self, row, col, sel):
+        if (row, col) != (-1, -1):
+            self.restart_selected()
+            if len(sel) > 0:
+                sel.remove(sel[0])
+            sel.append([self.start_x + (row * self.block_size), self.start_y + (col * self.block_size)])
+            self.grid[row][col].selected = True
 
 
 def blit_text(win, size, txt, color, x, y):
@@ -238,7 +255,35 @@ def get_click(pos, square):
     
     return -1, -1
 
-def redraw_window(win, width, month_index, year, square):
+def read_notes(year, month_index, row, col):
+    r = Tk()
+    label = Label(r, text='No notes')
+    for date in TEXTS:
+        if date[0] == year:
+            if date[1][month_index][row][col] != '':
+                label = Label(r, text=date[1][month_index][row][col])
+    label.pack()
+    r.mainloop()
+
+def get_input(entry, year, month_index, row, col, r):
+    txt =  entry.get()
+    list = []
+    list.append(txt)
+    for date in TEXTS:
+        if date[0] == year:
+            date[1][month_index][row][col] = list[0]
+    r.destroy()
+
+def add_notes(year, month_index, row, col):
+    r = Tk()
+    label = Label(r, text='Add Notes')
+    label.pack(padx=15, pady=20)
+    en = Entry(r)
+    en.pack()
+    btn = Button(r, text='Add Note', command=lambda :get_input(en, year, month_index, row, col, r))
+    btn.pack(padx=10, pady=10)
+
+def redraw_window(win, width, month_index, year, square, sel):
     win.fill((255, 255, 255))
     draw_name_month(win, width, months[month_index])
     blit_text(win, 30, f"Year: {str(year)}", (0, 0, 0), 630, 650)
@@ -249,24 +294,28 @@ def redraw_window(win, width, month_index, year, square):
             if spot != 0:
                 spot.draw(win)
     
+    for i in range(len(sel)):
+        pygame.draw.rect(win, (0, 0, 255), (sel[i][0], sel[i][1], square.block_size, square.block_size), 2)
+    
     square.blit_days(win)
 
-def add_birthday():
+def add_birthday(year, month_index, square):
     # CORRECT THIS
     for date in TEXTS:
-        date[1][2][3][3] = 'My Birthday'
+        pass
 
 def main(win, width):
     run = True
     month_index = dt.now().month - 1
     year = dt.now().year
+    sel = []
 
     while run:
-        add_birthday()
+        changed = False
         square = Square(month_index, BLOCK_SIZE, year)
         pos = pygame.mouse.get_pos()
 
-        redraw_window(win, width, month_index, year, square)
+        redraw_window(win, width, month_index, year, square, sel)
 
         # BUTTONS
         initial_x_f, final_x_f, initial_y_f, final_y_f = forward_button(win, pos, width)
@@ -281,15 +330,26 @@ def main(win, width):
                     if initial_y_f <= clicked_pos[1] <= final_y_f:
                         month_index += 1
                         START[0] = square.final_day_month
+                        changed = True
                 elif initial_x_b <= clicked_pos[0] <= final_x_b:
                     if initial_y_b <= clicked_pos[1] <= final_y_b:
                         month_index -= 1
+                        changed = True
                         START[0] = square.get_start_day_previous_month()
-                else:
+                if not changed:
                     row, col = get_click(clicked_pos, square)
+                    square.selected(row, col, sel)
                     for date in TEXTS:
                         if date[0] == year:
-                            date[1][month_index][row][col] = 'This is the way'
+                            if square.grid[row][col].selected:
+                                root = Tk()
+                                button1 = tkinter_buttons(root, 'Read Notes', 5, 25, lambda:read_notes(year, month_index, row, col))
+                                button1.pack(padx=15, pady=20)
+                                button2 = tkinter_buttons(root, 'Add Notes', 5, 25, lambda:add_notes(year, month_index, row, col))
+                                button2.pack(padx=15, pady=20)
+                                root.mainloop()
+                else:
+                    sel.clear()
         
         if month_index > 11:
             month_index = 0
@@ -309,6 +369,7 @@ def main(win, width):
                     check.append(1)
             if len(check) == 0:
                 TEXTS.append([year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]])
+        add_birthday(year, month_index, square)
         
         pygame.display.update()
 

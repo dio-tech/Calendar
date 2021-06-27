@@ -1,2 +1,0 @@
-	X	Make a page for each month
-	X	Make it editable

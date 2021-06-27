@@ -424,7 +424,7 @@ def main(win, width):
                 if pygame.mouse.get_pressed()[0]:
                     poss = pygame.mouse.get_pos()
                     row, col = get_click(poss, square)
-                    print(row, col)
+                    mass_selection.append([row, col])
         
         if month_index > 11:
             month_index = 0

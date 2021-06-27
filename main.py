@@ -4,6 +4,7 @@ from datetime import datetime as dt
 from buttons import *
 import math
 from tkinter import *
+from sqlalchemy import create_engine, MetaData, Table, Integer, String, Column
 pygame.init()
 
 # ------------------------------------------
@@ -23,7 +24,26 @@ days_of_month = [31, [28, 29], 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 BLOCK_SIZE = 100
 leap_year = 2016
 START = []
-TEXTS = [[actual_year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]]]
+TEXTS = [[actual_year, [[[['', (_+1+(x*6))] for _ in range(6)] for x in range(7)] for __ in range(12)]]]
+
+
+engine = create_engine('sqlite:///notes.db', echo = True)
+
+meta = MetaData()
+
+notes = Table(
+    'notes', meta,
+    Column('id', Integer, primary_key=True),
+    Column('text_id', Integer),
+    Column('row', Integer),
+    Column('col', Integer),
+    Column('month_index', Integer),
+    Column('year', Integer),
+    Column('notes', String)
+)
+
+meta.create_all(engine)
+conn = engine.connect()
 
 
 class Spot:
@@ -41,7 +61,7 @@ class Spot:
         self.selected = False
         for date in TEXTS:
             if date[0] == self.year:
-                self.text = date[1][self.month_index][row][col]
+                self.text = date[1][self.month_index][row][col][0]
     
     def draw(self, win):
         pygame.draw.rect(win, self.color, (self.x+1, self.y+1, self.block_size-1, self.block_size-1))
@@ -257,11 +277,13 @@ def get_click(pos, square):
 
 def read_notes(year, month_index, row, col):
     r = Tk()
+    r.state('zoomed')
+    r.title('Read Notes')
     label = Label(r, text='No notes')
     for date in TEXTS:
         if date[0] == year:
-            if date[1][month_index][row][col] != '':
-                label = Label(r, text=date[1][month_index][row][col])
+            if date[1][month_index][row][col][0] != '':
+                label = Label(r, text=date[1][month_index][row][col][0])
     label.pack()
     r.mainloop()
 
@@ -271,19 +293,50 @@ def get_input(entry, year, month_index, row, col, r):
     list.append(txt)
     for date in TEXTS:
         if date[0] == year:
-            date[1][month_index][row][col] = list[0]
-    r.destroy()
+            date[1][month_index][row][col][0] = list[0]
+            ins = notes.insert().values(text_id=date[1][month_index][row][col][1], row=row, col=col, month_index=month_index, year=year, notes=list[0])
+            conn.execute(ins)
+            r.destroy()
 
 def add_notes(year, month_index, row, col):
     r = Tk()
+    r.state('zoomed')
+    r.title('Add notes')
     label = Label(r, text='Add Notes')
     label.pack(padx=15, pady=20)
     en = Entry(r)
     en.pack()
     btn = Button(r, text='Add Note', command=lambda :get_input(en, year, month_index, row, col, r))
+    if year < dt.now().year:
+        btn['state'] = 'disabled'
     btn.pack(padx=10, pady=10)
 
-def redraw_window(win, width, month_index, year, square, sel):
+def clear_notes(year, month_index, row, col, root):
+    for date in TEXTS:
+        if date[0] == year:
+            date[1][month_index][row][col][0] = ''
+            s = notes.delete().where(notes.c.text_id == date[1][month_index][row][col][1])
+            conn.execute(s)
+    root.destroy()
+
+def update_texts(year):
+    s = notes.select().where(notes.c.year > year)
+    result = conn.execute(s)
+    years = []
+    for row in result:
+        if row.year in years:
+            pass
+        else:
+            years.append(row.year)
+    for yearss in years:
+        TEXTS.append([yearss, [[[['', (_+1+(x*6))] for _ in range(6)] for x in range(7)] for __ in range(12)]])
+    for date in TEXTS:
+        s = notes.select().where(notes.c.year == date[0])
+        result = conn.execute(s)
+        for row in result:
+            date[1][row.month_index][row.row][row.col][0] = row.notes
+            
+def redraw_window(win, width, month_index, year, square, sel, after_click):
     win.fill((255, 255, 255))
     draw_name_month(win, width, months[month_index])
     blit_text(win, 30, f"Year: {str(year)}", (0, 0, 0), 630, 650)
@@ -294,13 +347,17 @@ def redraw_window(win, width, month_index, year, square, sel):
             if spot != 0:
                 spot.draw(win)
     
+    if len(after_click) == 1:
+        if len(sel) > 0:
+            blit_text(win, 30, 'Right Click to notes management', (0, 0, 255), 10, 10)
+    
     for i in range(len(sel)):
         pygame.draw.rect(win, (0, 0, 255), (sel[i][0], sel[i][1], square.block_size, square.block_size), 2)
     
     square.blit_days(win)
 
 def add_birthday(year, month_index, square):
-    # CORRECT THIS
+    # FIX THIS
     for date in TEXTS:
         pass
 
@@ -309,13 +366,15 @@ def main(win, width):
     month_index = dt.now().month - 1
     year = dt.now().year
     sel = []
+    after_click = []
+    update_texts(year)
 
     while run:
         changed = False
         square = Square(month_index, BLOCK_SIZE, year)
         pos = pygame.mouse.get_pos()
 
-        redraw_window(win, width, month_index, year, square, sel)
+        redraw_window(win, width, month_index, year, square, sel, after_click)
 
         # BUTTONS
         initial_x_f, final_x_f, initial_y_f, final_y_f = forward_button(win, pos, width)
@@ -337,17 +396,27 @@ def main(win, width):
                         changed = True
                         START[0] = square.get_start_day_previous_month()
                 if not changed:
+                    sel.clear()
                     row, col = get_click(clicked_pos, square)
                     square.selected(row, col, sel)
                     for date in TEXTS:
                         if date[0] == year:
-                            if square.grid[row][col].selected:
-                                root = Tk()
-                                button1 = tkinter_buttons(root, 'Read Notes', 5, 25, lambda:read_notes(year, month_index, row, col))
-                                button1.pack(padx=15, pady=20)
-                                button2 = tkinter_buttons(root, 'Add Notes', 5, 25, lambda:add_notes(year, month_index, row, col))
-                                button2.pack(padx=15, pady=20)
-                                root.mainloop()
+                            if (row, col) != (-1, -1):
+                                after_click.append(1)
+                                if square.grid[row][col].selected:
+                                    if pygame.mouse.get_pressed()[2]:
+                                        root = Tk()
+                                        root.state('zoomed')
+                                        root.title('Notes management')
+                                        button1 = tkinter_buttons(root, 'Read Notes', 5, 25, lambda:read_notes(year, month_index, row, col))
+                                        button1.pack(padx=15, pady=20)
+                                        button2 = tkinter_buttons(root, 'Add Notes', 5, 25, lambda:add_notes(year, month_index, row, col))
+                                        button2.pack(padx=15, pady=20)
+                                        button3 = tkinter_buttons(root, 'Clear Notes', 5, 25, lambda:clear_notes(year, month_index, row, col, root))
+                                        button3.pack(padx=15, pady=20)
+                                        root.mainloop()
+                                        sel.clear()
+                                        after_click.clear()
                 else:
                     sel.clear()
         
@@ -359,7 +428,7 @@ def main(win, width):
                 if date[0] == year:
                     check.append(1)
             if len(check) == 0:
-                TEXTS.append([year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]])
+                TEXTS.append([year, [[[['', (_+1+(x*6))] for _ in range(6)] for x in range(7)] for __ in range(12)]])
         elif month_index < 0:
             month_index = 11
             year -= 1
@@ -368,8 +437,10 @@ def main(win, width):
                 if date[0] == year:
                     check.append(1)
             if len(check) == 0:
-                TEXTS.append([year, [[['' for _ in range(6)] for x in range(7)] for __ in range(12)]])
+                TEXTS.append([year, [[[['', (_+1+(x*6))] for _ in range(6)] for x in range(7)] for __ in range(12)]])
         add_birthday(year, month_index, square)
+        if len(after_click) == 2:
+            after_click.remove(after_click[0])
         
         pygame.display.update()
 

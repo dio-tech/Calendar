@@ -421,7 +421,7 @@ def main(win, width):
                 else:
                     sel.clear()
             if event.type == pygame.MOUSEMOTION:
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                if pygame.mouse.get_pressed()[0]:
                     poss = pygame.mouse.get_pos()
                     row, col = get_click(poss, square)
                     print(row, col)

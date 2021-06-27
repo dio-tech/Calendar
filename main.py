@@ -421,9 +421,10 @@ def main(win, width):
                 else:
                     sel.clear()
             if event.type == pygame.MOUSEMOTION:
-                poss = pygame.mouse.get_pos()
-                row, col = get_click(poss, square)
-                print(row, col)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    poss = pygame.mouse.get_pos()
+                    row, col = get_click(poss, square)
+                    print(row, col)
         
         if month_index > 11:
             month_index = 0

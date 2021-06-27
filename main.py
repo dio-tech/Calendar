@@ -367,6 +367,7 @@ def main(win, width):
     year = dt.now().year
     sel = []
     after_click = []
+    mass_selection = []
     update_texts(year)
 
     while run:
@@ -384,6 +385,10 @@ def main(win, width):
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEMOTION:
+                    poss = pygame.mouse.get_pos()
+                    row, col = get_click(poss, square)
+                    print(row, col)
                 clicked_pos = pygame.mouse.get_pos()
                 if initial_x_f <= clicked_pos[0] <= final_x_f:
                     if initial_y_f <= clicked_pos[1] <= final_y_f:

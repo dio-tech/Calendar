@@ -23,3 +23,10 @@ def back_button(win, pos, width):
 def tkinter_buttons(root, txt, h, w, c):
     button = Button(root, text=txt, height=h, width=w, command=c)
     return button
+
+def year_button(win, pos):
+    if 620 <= pos[0] <= 740:
+        if 640 <= pos[1] <= 680:
+            pygame.draw.rect(win, (0, 0, 0), (620, 640, 120, 40), 2)
+    
+    return 620, 740, 640, 680

@@ -100,7 +100,6 @@ class Square:
         self.num_of_last_rows = math.ceil((self.days - (14+len(self.week)-self.start_day_month))/len(self.week))
         self.num_of_rest = (self.days - (14+len(self.week)-self.start_day_month))%len(self.week)
         self.sel = []
-    # PROBLEMS IN GETTING THE DAYS
     
     def get_starting_day(self):
         if len(START) == 0:
@@ -349,6 +348,98 @@ def get_new_year(new_year, year):
                 n += 1
                 TEXTS.append([n, [[[['', (_+1+(x*6))] for _ in range(6)] for x in range(7)] for __ in range(12)]])
 
+def get_year_no_calendar(new_year, year):
+    n = year
+    if new_year - year > 1:
+        if new_year > actual_year:
+            start_next_year = calendar.weekday(year+1, 1, 1)
+            dict = {0:1, 1:2, 2:3, 3:4, 4:5, 5:6, 6:0}
+            start_next_year = dict[start_next_year]
+            days = 0
+            for _ in range(new_year - (year+1)):
+                # print((leap_year - (year+1+_))%4)
+                if (leap_year - (year+1+_))%4 == 0:
+                    for i in range(len(days_of_month)):
+                        if i == 1:
+                            days += days_of_month[i][1]
+                        else:
+                            days += days_of_month[i]
+                else:
+                    for i in range(len(days_of_month)):
+                        if i == 1:
+                            days += days_of_month[i][0]
+                        else:
+                            days += days_of_month[i]
+            
+                for _ in range(days):
+                    start_next_year += 1
+                    if start_next_year == 7:
+                        start_next_year = 0
+                
+                for _ in range(abs(new_year - year)):
+                    if new_year > year:
+                        if n < new_year:
+                            n += 1
+                            TEXTS.append([n, [[[['', (_+1+(x*6))] for _ in range(6)] for x in range(7)] for __ in range(12)]])
+                START[0] = start_next_year
+    elif new_year - year < -1:
+        start_prev_year = calendar.weekday(year-1, 1, 1)
+        dict = {0:1, 1:2, 2:3, 3:4, 4:5, 5:6, 6:0}
+        start_prev_year = dict[start_prev_year]
+        days = 0
+        for _ in range(abs(new_year - (year-1))):
+            if (leap_year - (year-1-_))%4 == 0:
+                for i in range(len(days_of_month)):
+                    if i == 1:
+                        days += days_of_month[i][1]
+                    else:
+                        days += days_of_month[i]
+            else:
+                for i in range(len(days_of_month)):
+                    if i == 1:
+                        days += days_of_month[i][0]
+                    else:
+                        days += days_of_month[i]
+        
+        for _ in range(days):
+            start_prev_year -= 1
+            if start_prev_year == -1:
+                start_prev_year = 6
+        
+        START[0] = start_prev_year
+    
+    elif new_year - year == 1:
+        start_year = calendar.weekday(year, 1, 1)
+        dict = {0:1, 1:2, 2:3, 3:4, 4:5, 5:6, 6:0}
+        start_year = dict[start_year]
+        days = 0
+        if (leap_year - year)%4 == 0:
+            days = 366
+        else:
+            days = 365
+        for i in range(days):
+            start_year += 1
+            if start_year == 7:
+                start_year = 0
+        
+        START[0] = start_year
+    
+    elif new_year - year == -1:
+        start_year = calendar.weekday(year, 1, 1)
+        dict = {0:1, 1:2, 2:3, 3:4, 4:5, 5:6, 6:0}
+        start_year = dict[start_year]
+        days = 0
+        if (leap_year - new_year)%4 == 0:
+            days = 366
+        else:
+            days = 365
+        for i in range(days):
+            start_year -= 1
+            if start_year == -1:
+                start_year = 6
+        
+        START[0] = start_year
+
 def update_texts(year):
     s = notes.select().where(notes.c.year > year)
     result = conn.execute(s)
@@ -377,15 +468,16 @@ def redraw_window(win, width, month_index, year, square, sel, after_click, mass_
             if spot != 0:
                 spot.draw(win)
     
-    if len(after_click) == 1:
-        if len(sel) > 0:
-            blit_text(win, 30, 'Keep Left Click and Right Click to notes management', (0, 0, 255), 10, 10)
-    
     for pos in mass_selection:
         if (pos[0], pos[1]) != (-1, -1):
-            x = square.start_x + pos[0] * square.block_size
-            y = square.start_y + pos[1] * square.block_size
-            pygame.draw.rect(win, (0, 0, 255), (x, y, square.block_size, square.block_size))
+            x = square.start_x + pos[0] * square.block_size+1
+            y = square.start_y + pos[1] * square.block_size+1
+            pygame.draw.rect(win, (0, 0, 255), (x, y, square.block_size-1, square.block_size-1))
+    
+    if len(after_click) == 1:
+        if len(sel) > 0:
+            if year >= actual_year:
+                blit_text(win, 30, 'Keep Left Click and Right Click to notes management', (0, 0, 255), 10, 10)
     
     for i in range(len(sel)):
         pygame.draw.rect(win, (0, 0, 255), (sel[i][0], sel[i][1], square.block_size, square.block_size), 2)
@@ -427,11 +519,11 @@ def main(win, width):
         pos = pygame.mouse.get_pos()
 
         redraw_window(win, width, month_index, year, square, sel, after_click, mass_selection)
-        start_x, final_x, start_y, final_y = year_button(win, pos)
 
         # BUTTONS
         initial_x_f, final_x_f, initial_y_f, final_y_f = forward_button(win, pos, width)
         initial_x_b, final_x_b, initial_y_b, final_y_b = back_button(win, pos, width)
+        start_x, final_x, start_y, final_y = year_button(win, pos)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -460,7 +552,7 @@ def main(win, width):
                         btn1 = tkinter_buttons(root, 'Enter', 5, 25, lambda:command_year(en, n_year, root))
                         btn1.pack(padx=15, pady=25)
                         root.mainloop()
-                        get_new_year(int(n_year[0]), year)
+                        get_year_no_calendar(int(n_year[0]), year)
                         month_index = 0
                         year = int(n_year[0])
                         add_birthday(23, 3)
@@ -473,20 +565,21 @@ def main(win, width):
                         for date in TEXTS:
                             if date[0] == year:
                                 if (row, col) != (-1, -1):
-                                    if square.grid[row][col].selected:
-                                        if pygame.mouse.get_pressed()[2]:
-                                            root = Tk()
-                                            root.state('zoomed')
-                                            root.title('Notes management')
-                                            button1 = tkinter_buttons(root, 'Read Notes', 5, 25, lambda:read_notes(year, month_index, row, col))
-                                            button1.pack(padx=15, pady=20)
-                                            button2 = tkinter_buttons(root, 'Add Notes', 5, 25, lambda:add_notes(year, month_index, row, col))
-                                            button2.pack(padx=15, pady=20)
-                                            button3 = tkinter_buttons(root, 'Clear Notes', 5, 25, lambda:clear_notes(year, month_index, row, col, root))
-                                            button3.pack(padx=15, pady=20)
-                                            root.mainloop()
-                                            sel.clear()
-                                            after_click.clear()
+                                    if year >= actual_year:
+                                        if square.grid[row][col].selected:
+                                            if pygame.mouse.get_pressed()[2]:
+                                                root = Tk()
+                                                root.state('zoomed')
+                                                root.title('Notes management')
+                                                button1 = tkinter_buttons(root, 'Read Notes', 5, 25, lambda:read_notes(year, month_index, row, col))
+                                                button1.pack(padx=15, pady=20)
+                                                button2 = tkinter_buttons(root, 'Add Notes', 5, 25, lambda:add_notes(year, month_index, row, col))
+                                                button2.pack(padx=15, pady=20)
+                                                button3 = tkinter_buttons(root, 'Clear Notes', 5, 25, lambda:clear_notes(year, month_index, row, col, root))
+                                                button3.pack(padx=15, pady=20)
+                                                root.mainloop()
+                                                sel.clear()
+                                                after_click.clear()
                 else:
                     sel.clear()
                     mass_selection.clear()
@@ -495,6 +588,7 @@ def main(win, width):
                     poss = pygame.mouse.get_pos()
                     row, col = get_click(poss, square)
                     if [row , col] not in mass_selection:
+                        sel.clear()
                         mass_selection.append([row, col])
             
             keys = pygame.key.get_pressed()
